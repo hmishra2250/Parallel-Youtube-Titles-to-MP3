@@ -1,0 +1,4 @@
+pymediainfo==2.2.1
+youtube_dl==2018.2.26
+google_api_python_client==1.6.5
+python_magic==0.4.15
