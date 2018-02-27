@@ -1,6 +1,6 @@
 # Parallel-Youtube-Titles-to-MP3
 
-Search and download a list of videos (from their title) from Youtube in Parallel and convert them to mp3 along with their metadata information and thumbnails. Metadata information is very helpful where we want to load and classify music in our music players. Also adding parallelism speeds up the process by multiple times!
+Search and download a list of videos (from their title) from Youtube in Parallel and convert them to mp3 along with their metadata information and thumbnails. Metadata information is very helpful where we want to load and classify music in our music players. Also adding parallelism speeds up the process by multiple times! The idea can be easily extended to download from youtube urls or playlists in parallel. Better create your own use case and make a pull request ;)
 
 
 ## What is Parallel-Youtube-Titles-to-MP3?
