@@ -15,9 +15,9 @@ DEVELOPER_KEY = ""
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 DOWNLOAD_PATH = "/home/him/Music/"
-TITLES_FILE = "/home/him/Titles-Youtube-Mp3/titles.txt"
-ERRORS_FILE = "/home/him/Titles-Youtube-Mp3/errors.txt"
-ARCHIVE_FILE = "/home/him/Titles-Youtube-Mp3/archive.txt"
+TITLES_FILE = "./titles.txt"
+ERRORS_FILE = "./errors.txt"
+ARCHIVE_FILE = "./archive.txt"
 MAX_NUM_PROCESSES = 10
 
 def search_video(title):
@@ -119,7 +119,7 @@ def Run():
             
     with open(ARCHIVE_FILE, "a") as f:
         for x in success:
-            f.write('\n' + 'youtube ' + x)
+            f.write('youtube ' + x + '\n')
     
 
 ##main
