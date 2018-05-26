@@ -45,6 +45,10 @@ This is a python script that does the following:
 
 This repository also includes dir2list.py, which go through a list of directories (non-recursively), finds all the video files and list them to titles.txt file. I have had downloaded all songs in the form of videos and had a tough time managing the volume of data. Thus, I wrote this script to extract the title of the videos and download the mp3 songs for all those titles.
 
+## Youtube-dl command for the same
+
+`youtube-dl --write-thumbnail --format 'bestaudio/best' --output '%(title)s.%(ext)s' --embed-thumbnail --add-metadata --extract-audio --audio-format 'mp3' "URL"`
+
 ## Additional Information
 
 The inspiration for this project comes from [Cristian Baldi's](https://github.com/crisbal) project [Titles-Youtube-Mp3](https://github.com/crisbal/Titles-Youtube-Mp3), which is a sequential version without metadata information. Hence there was trouble managing all songs in different media players. Hence, I wrote this script to do the same in parallel!
