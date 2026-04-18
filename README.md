@@ -1,78 +1,135 @@
-# Parallel-Youtube-Titles-to-MP3
+# Parallel Youtube Titles to MP3
 
-Search and download a list of videos (from their title) from Youtube in Parallel and convert them to mp3 along with their metadata information and thumbnails. Metadata information is very helpful where we want to load and classify music in our music players. Also adding parallelism speeds up the process by multiple times! The idea can be easily extended to download from youtube urls or playlists in parallel. Better create your own use case and make a pull request ;)
+Download audio from YouTube by searching with human-readable titles, then convert the best audio stream to MP3 with metadata and thumbnails.
 
+This repo originally shipped as a Python 2 + `youtube-dl` + Google Data API script. That version is not viable anymore:
 
-## What is Parallel-Youtube-Titles-to-MP3?
+- it does not parse on Python 3
+- it hardcodes personal file paths
+- it requires a Google API key for a task that `yt-dlp` can already handle
+- the dependency stack is stale enough to break on a current machine
 
-This is a python script that does the following:
+The current version replaces that with a Python 3 implementation built on `yt-dlp`.
 
-* Reads the file 'titles.txt', which contains a list of videos to search for
-    * For example it can contain the name of a few songs you want to download and convert to mp3
-    * Each line of the file is a video to search for 
-* Searches Youtube via the Youtube API looking for a video matching the given keywords
-    * Try to use specific keywords
-    * The script just does a simple search and get the url of the first video
-* Download and convert the video to mp3 along with their metadata in parallel
-    * To achieve this it uses the youtube-dl module/library 
-    * The file will be called "{video_title}.mp3"
+## What It Does
 
-## How to use Parallel-Youtube-Titles-to-MP3?
+- reads a newline-delimited titles file such as [titles.txt](./titles.txt)
+- searches YouTube for the first result matching each title
+- downloads the best available audio
+- converts the result to MP3
+- embeds metadata and thumbnails
+- records successful video IDs in a download archive
+- writes failed titles to an errors file
 
-1. Install Python 2 (Should work with python3, although not tested)
-2. Install pip
-3. Fork/Clone/Download this repository
-4. Install the required packages via pip
-    * pip install -r requirements.txt
-5. Obtain a YouTube API key
-    * Go to https://console.cloud.google.com/
-    * Create a new project 
-    * Your Project > Enable APIs and Services > YouTube Data API v3 > Enable
-    * Inside the newly enabled API, click create credentials. Copy the generated API key.
-6. Set your API key in ["list2mp3_seq.py"](list2mp3_seq.py) and ["list2mp3_mp.py"](list2mp3_mp.py)
-    * Find DEVELOPER_KEY
-    * Set DEVELOPER_KEY = {your_api_key}
-7. Fill the file "titles.txt" (or any other file, just describe this using TITLES_FILE variable) with the videos to search and download.
-    * Rememeber to use the exact video title or keywords that will get a specific video
-    * One video per line
-8. Set the ERRORS_FILE to write error titles to a file, ARCHIVE_FILE to maintain the archive of already downloaded list of songs (in youtube-dl compatible form) and MAX_NUM_PROCESSES to determine the maximum number of processes to download songs in parallel
-9. Run the script
-    * python list2mp3_seq.py for sequential running (If you have interent bandwidth issues or some other problem)
-    * python list2mp3_mp.py for Parallel and time saving run
-    * Enjoy your mp3s
+There are two entry points:
 
-## Additional Utilities
+- [list2mp3_seq.py](./list2mp3_seq.py) for sequential execution
+- [list2mp3_mp.py](./list2mp3_mp.py) for parallel execution
 
-This repository also includes dir2list.py, which go through a list of directories (non-recursively), finds all the video files and list them to titles.txt file. I have had downloaded all songs in the form of videos and had a tough time managing the volume of data. Thus, I wrote this script to extract the title of the videos and download the mp3 songs for all those titles.
+## Requirements
 
-## Youtube-dl command for the same
+- Python 3.10+
+- `ffmpeg` available on `PATH`
 
-`youtube-dl --write-thumbnail --format 'bestaudio/best' --output '%(title)s.%(ext)s' --embed-thumbnail --add-metadata --extract-audio --audio-format 'mp3' "URL"`
+Install Python dependencies:
 
-## Additional Information
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-The inspiration for this project comes from [Cristian Baldi's](https://github.com/crisbal) project [Titles-Youtube-Mp3](https://github.com/crisbal/Titles-Youtube-Mp3), which is a sequential version without metadata information. Hence there was trouble managing all songs in different media players. Hence, I wrote this script to do the same in parallel!
+Install FFmpeg if needed:
 
-## Use case
+```bash
+sudo apt update
+sudo apt install -y ffmpeg
+```
 
-This might be illegal (depending on the copyright rules of the videos) but you could use this script if you have a list of the tiles of your favourite songs (list that you generated from Pandora or Spotify for example) and you want to get the mp3s of the songs so you can listen to them on your PC or Phone.
+## Usage
 
-## Need help?
+Sequential:
 
-If you need any help just create an Issue.
+```bash
+python3 list2mp3_seq.py \
+  --titles-file titles.txt \
+  --download-dir downloads
+```
 
-## Want to help?
+Parallel:
 
-If you want to improve the code and submit a pull request feel free to do so.
+```bash
+python3 list2mp3_mp.py \
+  --titles-file titles.txt \
+  --download-dir downloads \
+  --jobs 8
+```
 
-## Licensce
+Dry run to resolve matches without downloading:
 
-GPL v3
+```bash
+python3 list2mp3_mp.py --dry-run
+```
 
+### Options
 
+Both entry points support:
 
+- `--titles-file`
+- `--download-dir`
+- `--errors-file`
+- `--archive-file`
+- `--dry-run`
 
+The parallel version also accepts:
 
+- `--jobs`
 
+## Why The Parallel Version Changed
 
- 
+The original "multiprocess" version was not actually production-grade parallel download code. It relied on:
+
+- a global YouTube API client
+- stale Python 2 exception handling
+- a shared archive file without safe coordination
+
+The current implementation uses a worker pool while coordinating duplicate video IDs in-memory for the current run. That avoids multiple workers downloading the same resolved video at once and appends archive entries only after successful downloads.
+
+## Titles File
+
+Use one query per line:
+
+```text
+Ed Sheeran - Happier [Official Audio]
+Daft Punk - Something About Us
+Radiohead - No Surprises
+```
+
+More specific titles usually produce better first-result matches.
+
+## Output Files
+
+By default the scripts use:
+
+- `titles.txt`
+- `downloads/`
+- `errors.txt`
+- `archive.txt`
+
+`archive.txt` stores entries in a `yt-dlp`-compatible style:
+
+```text
+youtube 8TpcBDJZsJA
+```
+
+## Helper Script
+
+[dir2list.py](./dir2list.py) scans directories non-recursively and converts local video filenames into a titles file:
+
+```bash
+python3 dir2list.py ~/Videos ~/MoreVideos --output titles.txt
+```
+
+## Legal Note
+
+Downloading copyrighted content may violate the law, platform rules, or license terms depending on your jurisdiction and the content involved. Use the tool only where you have the right to access, download, and convert the media.
