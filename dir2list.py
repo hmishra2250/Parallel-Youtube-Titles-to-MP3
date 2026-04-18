@@ -1,51 +1,53 @@
-import os
-import sys
-reload(sys)
-sys.setdefaultencoding("utf-8")
-import traceback
+from __future__ import annotations
 
-import magic
-from pymediainfo import MediaInfo
+import argparse
+import mimetypes
+from pathlib import Path
 
-DIRECTORIES = ["~/data/Songs-C3/", "~/data/Songs-C2/", "~/data/Songs-C1/"]
-OUTFILE = "./titles.txt"
 
-def check_video_pymediainfo(path):
-    fileinfo = MediaInfo.parse(path)
-    
-    for track in  fileinfo.tracks:
-        if track.track_type == "Video":
-            return True
-    
-    return False
-    
-def check_video_magic(path):
-    f = magic.Magic(mime=True)
-    if 'video' in f.from_file(path):
+COMMON_VIDEO_SUFFIXES = {
+    ".3gp",
+    ".avi",
+    ".flv",
+    ".m4v",
+    ".mkv",
+    ".mov",
+    ".mp4",
+    ".mpeg",
+    ".mpg",
+    ".webm",
+    ".wmv",
+}
+
+
+def is_video_file(path: Path) -> bool:
+    if path.suffix.lower() in COMMON_VIDEO_SUFFIXES:
         return True
-    return False
+
+    mime_type, _ = mimetypes.guess_type(path.name)
+    return bool(mime_type and mime_type.startswith("video/"))
 
 
-##main
+def extract_titles(directories: list[Path]) -> list[str]:
+    titles: list[str] = []
+    for directory in directories:
+        for child in sorted(directory.expanduser().iterdir()):
+            if child.is_file() and is_video_file(child):
+                titles.append(child.stem)
+    return titles
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Convert a list of local video filenames into a titles file.")
+    parser.add_argument("directories", nargs="+", type=Path, help="Directories to scan non-recursively.")
+    parser.add_argument("--output", type=Path, default=Path("titles.txt"))
+    args = parser.parse_args()
+
+    titles = extract_titles(args.directories)
+    args.output.write_text("".join(f"{title}\n" for title in titles), encoding="utf-8")
+    print(f"Wrote {len(titles)} titles to {args.output}")
+    return 0
+
+
 if __name__ == "__main__":
-    videos = []
-    for directory in DIRECTORIES:
-        work_dir = os.path.expanduser(directory)
-        dirs = os.listdir(work_dir)
-        for file_path in dirs:
-            temp_path = work_dir + file_path
-            if os.path.isdir(temp_path):
-                continue
-            try:
-                if check_video_magic(temp_path):
-                    temp  = file_path.split('.') 
-                    song_name = "".join(temp[:-1])
-                    videos.append(song_name)
-            except Exception as e:
-                traceback.print_exc()
-                print("Error processing file " + temp_path)
-    outfile = open(OUTFILE, 'w')
-    for x in videos:
-        outfile.write(x + '\n')
-    outfile.close
-              
+    raise SystemExit(main())
